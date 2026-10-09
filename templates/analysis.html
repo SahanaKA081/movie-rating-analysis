@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Deep Analytics - Movie Rating Analysis{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center">
+  <div>
+    <h1 class="page-title"><i class="fa-solid fa-chart-pie text-pink me-2" style="color: #ec4899;"></i>Advanced MongoDB Aggregation Analytics</h1>
+    <p class="page-subtitle">Deep analytical insights calculated using MongoDB aggregation pipelines (`$group`, `$match`, `$sort`, `$avg`, `$sum`).</p>
+  </div>
+  <div>
+    <button class="btn btn-outline-info btn-sm" onclick="loadAllAnalysisData()">
+      <i class="fa-solid fa-rotate me-1"></i> Re-aggregate Data
+    </button>
+  </div>
+</div>
+
+<!-- Dynamic Summary Bar -->
+<div class="glass-card mb-4 bg-dark border-info border-opacity-25">
+  <div class="row align-items-center">
+    <div class="col-12 col-md-8">
+      <h6 class="text-info fw-bold mb-1"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>Dynamic Database Insights</h6>
+      <ul class="mb-0 ps-3 text-muted small" id="analysisInsightsList">
+        <li>Loading dynamic observations from MongoDB...</li>
+      </ul>
+    </div>
+    <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+      <span class="badge bg-primary fs-6 p-2"><i class="fa-solid fa-database me-1"></i> MongoDB Aggregation Engine</span>
+    </div>
+  </div>
+</div>
+
+<!-- Analytics Grid -->
+<div class="row g-4 mb-4">
+
+  <!-- 1. Top Rated Movies with Threshold Filter -->
+  <div class="col-12 col-lg-7">
+    <div class="glass-card h-100">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <h5 class="m-0 font-weight-bold"><i class="fa-solid fa-award text-warning me-2"></i>Top Rated Movies</h5>
+        <div class="d-flex align-items-center gap-2">
+          <label class="text-muted small mb-0">Min Reviews:</label>
+          <select id="minVotesFilter" class="form-select form-select-sm w-auto" onchange="loadTopMovies()">
+            <option value="1">Min 1 Review</option>
+            <option value="3" selected>Min 3 Reviews</option>
+            <option value="5">Min 5 Reviews</option>
+            <option value="8">Min 8 Reviews</option>
+          </select>
+        </div>
+      </div>
+      <div class="chart-container mb-3">
+        <canvas id="topMoviesChartAnalysis"></canvas>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-custom table-sm mb-0">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Movie Title</th>
+              <th>Genre</th>
+              <th>Year</th>
+              <th>Avg Rating</th>
+              <th>Total Reviews</th>
+            </tr>
+          </thead>
+          <tbody id="topMoviesTableBody">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Most-Rated Movies -->
+  <div class="col-12 col-lg-5">
+    <div class="glass-card h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="m-0 font-weight-bold"><i class="fa-solid fa-fire text-danger me-2"></i>Most Reviewed Movies</h5>
+        <span class="badge bg-secondary">Review Volume</span>
+      </div>
+      <div class="chart-container mb-3">
+        <canvas id="mostRatedChart"></canvas>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-custom table-sm mb-0">
+          <thead>
+            <tr>
+              <th>Movie Title</th>
+              <th>Genre</th>
+              <th>Review Count</th>
+              <th>Avg Rating</th>
+            </tr>
+          </thead>
+          <tbody id="mostRatedTableBody">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Genre Performance (Average Rating & Review Counts) -->
+  <div class="col-12 col-lg-7">
+    <div class="glass-card h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="m-0 font-weight-bold"><i class="fa-solid fa-layer-group text-info me-2"></i>Genre Rating & Volume Comparison</h5>
+        <span class="badge bg-secondary">$group & $avg & $addToSet</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="genreComparisonChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Release Year Rating Trends -->
+  <div class="col-12 col-lg-5">
+    <div class="glass-card h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="m-0 font-weight-bold"><i class="fa-solid fa-calendar-days text-success me-2"></i>Release Year Trends</h5>
+        <span class="badge bg-secondary">Timeline</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="yearTrendsChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Viva & Examination Reference Section -->
+<div class="glass-card mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="m-0 font-weight-bold"><i class="fa-solid fa-code text-info me-2"></i>MongoDB Aggregation Pipeline References (Viva Guide)</h5>
+    <span class="badge bg-dark border border-info text-info">PyMongo Pipeline Snippets</span>
+  </div>
+  <p class="text-muted small mb-3">These actual MongoDB aggregation pipelines are executed in `app.py` to calculate the analysis figures above:</p>
+
+  <div class="row g-3">
+    <!-- Pipeline 1 -->
+    <div class="col-12 col-md-6">
+      <div class="query-box">
+        <div class="text-warning fw-bold mb-1">// 1. Top Movies by Average Rating ($group, $match, $sort, $limit)</div>
+        <pre class="m-0"><code>pipeline = [
+  {"$group": {
+      "_id": "$movie_title",
+      "avg_rating": {"$avg": "$rating"},
+      "total_ratings": {"$sum": 1},
+      "genre": {"$first": "$genre"}
+  }},
+  {"$match": {"total_ratings": {"$gte": 5}}},
+  {"$sort": {"avg_rating": -1, "total_ratings": -1}},
+  {"$limit": 10}
+]</code></pre>
+      </div>
+    </div>
+
+    <!-- Pipeline 2 -->
+    <div class="col-12 col-md-6">
+      <div class="query-box">
+        <div class="text-warning fw-bold mb-1">// 2. Genre Performance ($group, $avg, $sum, $addToSet)</div>
+        <pre class="m-0"><code>pipeline = [
+  {"$group": {
+      "_id": "$genre",
+      "avg_rating": {"$avg": "$rating"},
+      "total_ratings": {"$sum": 1},
+      "distinct_movies": {"$addToSet": "$movie_title"}
+  }},
+  {"$sort": {"avg_rating": -1}}
+]</code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/analysis.js') }}"></script>
+{% endblock %}

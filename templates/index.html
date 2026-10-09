@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Movie Rating Analysis{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center">
+  <div>
+    <h1 class="page-title"><i class="fa-solid fa-gauge-high text-info me-2"></i>Executive Analytics Dashboard</h1>
+    <p class="page-subtitle">Real-time audience rating statistics, movie rankings, and MongoDB data summaries.</p>
+  </div>
+  <div>
+    <button class="btn btn-outline-info btn-sm" onclick="fetchDashboardData()">
+      <i class="fa-solid fa-rotate me-1"></i> Refresh Data
+    </button>
+  </div>
+</div>
+
+<!-- KPI Summary Cards Grid -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="glass-card kpi-card records">
+      <div class="kpi-icon">
+        <i class="fa-solid fa-film"></i>
+      </div>
+      <div>
+        <div class="kpi-value" id="kpiTotalRecords">--</div>
+        <div class="kpi-label">Total Rating Records</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="glass-card kpi-card movies">
+      <div class="kpi-icon">
+        <i class="fa-solid fa-clapperboard"></i>
+      </div>
+      <div>
+        <div class="kpi-value" id="kpiDistinctMovies">--</div>
+        <div class="kpi-label">Distinct Movies</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="glass-card kpi-card users">
+      <div class="kpi-icon">
+        <i class="fa-solid fa-users"></i>
+      </div>
+      <div>
+        <div class="kpi-value" id="kpiDistinctUsers">--</div>
+        <div class="kpi-label">Distinct Users</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="glass-card kpi-card rating">
+      <div class="kpi-icon">
+        <i class="fa-solid fa-star"></i>
+      </div>
+      <div>
+        <div class="kpi-value" id="kpiOverallAvg">--</div>
+        <div class="kpi-label">Overall Avg Rating</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Visualizations Grid -->
+<div class="row g-4">
+  <!-- Top 5 Highest Rated Movies -->
+  <div class="col-12 col-lg-7">
+    <div class="glass-card h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="m-0 font-weight-bold"><i class="fa-solid fa-trophy text-warning me-2"></i>Top 5 Rated Movies (Min. 3 Reviews)</h5>
+        <span class="badge bg-secondary">MongoDB $group & $avg</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="topMoviesChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Genre Share (Doughnut Chart) -->
+  <div class="col-12 col-lg-5">
+    <div class="glass-card h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="m-0 font-weight-bold"><i class="fa-solid fa-chart-pie text-pink me-2" style="color: #ec4899;"></i>Genre Distribution Share</h5>
+        <span class="badge bg-secondary">MongoDB $group & $sum</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="genreDoughnutChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rating Breakdown Distribution -->
+  <div class="col-12 col-lg-7">
+    <div class="glass-card h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="m-0 font-weight-bold"><i class="fa-solid fa-chart-column text-info me-2"></i>Rating Frequency Spectrum (0.5 to 5.0 Stars)</h5>
+        <span class="badge bg-secondary">MongoDB Rating Histogram</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="ratingDistChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Automated Insights & Observations -->
+  <div class="col-12 col-lg-5">
+    <div class="glass-card h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="m-0 font-weight-bold"><i class="fa-solid fa-lightbulb text-warning me-2"></i>Dynamic MongoDB Insights</h5>
+        <span class="badge bg-primary">Auto Generated</span>
+      </div>
+      <p class="text-muted small">Real-time analytical observations derived directly from MongoDB aggregation pipelines:</p>
+      <div id="insightsContainer">
+        <div class="text-center py-4 text-muted">
+          <i class="fa-solid fa-spinner fa-spin me-2"></i> Loading dynamic insights...
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

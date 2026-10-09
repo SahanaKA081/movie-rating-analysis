@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Ratings Management - Movie Rating Analysis{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center">
+  <div>
+    <h1 class="page-title"><i class="fa-solid fa-list-check text-primary me-2"></i>Movie Ratings Data Management</h1>
+    <p class="page-subtitle">View, search, filter, insert, edit, and delete movie rating documents stored in MongoDB.</p>
+  </div>
+  <div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRatingModal" onclick="openAddModal()">
+      <i class="fa-solid fa-plus me-1"></i> Add New Rating
+    </button>
+  </div>
+</div>
+
+<!-- Filters and Controls Card -->
+<div class="glass-card mb-4">
+  <div class="row g-3 align-items-center">
+    <!-- Search Title -->
+    <div class="col-12 col-md-4">
+      <label class="form-label text-muted small fw-bold mb-1">Search Movie Title</label>
+      <div class="input-group">
+        <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+        <input type="text" id="searchInput" class="form-control" placeholder="Type movie title..." onkeyup="handleSearchKeyup(event)">
+      </div>
+    </div>
+
+    <!-- Genre Filter -->
+    <div class="col-6 col-md-3">
+      <label class="form-label text-muted small fw-bold mb-1">Filter by Genre</label>
+      <select id="genreFilter" class="form-select" onchange="loadRatings(1)">
+        <option value="All">All Genres</option>
+      </select>
+    </div>
+
+    <!-- Sort Selector -->
+    <div class="col-6 col-md-3">
+      <label class="form-label text-muted small fw-bold mb-1">Sort By</label>
+      <select id="sortSelect" class="form-select" onchange="loadRatings(1)">
+        <option value="rating_date:desc">Newest Rating Date</option>
+        <option value="rating:desc">Highest Rating</option>
+        <option value="rating:asc">Lowest Rating</option>
+        <option value="movie_title:asc">Movie Title (A-Z)</option>
+        <option value="release_year:desc">Release Year (Newest)</option>
+      </select>
+    </div>
+
+    <!-- Clear Filters Button -->
+    <div class="col-12 col-md-2 d-flex align-items-end">
+      <button class="btn btn-outline-secondary w-100 mt-3 mt-md-0" onclick="resetFilters()">
+        <i class="fa-solid fa-filter-circle-xmark me-1"></i> Reset
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Data Table Card -->
+<div class="glass-card p-0 overflow-hidden">
+  <div class="table-responsive">
+    <table class="table table-custom mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>User ID</th>
+          <th>Movie Title</th>
+          <th>Genre</th>
+          <th>Release Year</th>
+          <th>Rating</th>
+          <th>Date Rated</th>
+          <th class="text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="ratingsTableBody">
+        <tr>
+          <td colspan="8" class="text-center py-4 text-muted">
+            <i class="fa-solid fa-spinner fa-spin me-2"></i> Loading ratings from MongoDB...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Table Footer & Pagination -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center p-3 border-top border-secondary border-opacity-25">
+    <div class="text-muted small mb-2 mb-md-0" id="paginationInfo">
+      Showing 0 - 0 of 0 rating records
+    </div>
+    <nav>
+      <ul class="pagination pagination-sm m-0" id="paginationControls">
+        <!-- Dynamic pagination buttons -->
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<!-- =================================================------------------ -->
+<!-- Add Rating Modal -->
+<!-- =================================================------------------ -->
+<div class="modal fade" id="addRatingModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa-solid fa-square-plus text-primary me-2"></i>Add New Movie Rating</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="hideCustomModal('addRatingModal')" aria-label="Close"></button>
+      </div>
+      <form id="addRatingForm" onsubmit="submitAddRating(event)">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">User ID <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="addUserId" placeholder="e.g. USER_201" required>
+            <small class="text-muted">Unique identifier for the user submitting the rating.</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Movie Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="addMovieTitle" placeholder="e.g. Interstellar" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">Genre <span class="text-danger">*</span></label>
+              <select class="form-select" id="addGenre" required>
+                <option value="" disabled selected>Select Genre</option>
+                <option value="Action">Action</option>
+                <option value="Comedy">Comedy</option>
+                <option value="Drama">Drama</option>
+                <option value="Sci-Fi">Sci-Fi</option>
+                <option value="Romance">Romance</option>
+                <option value="Horror">Horror</option>
+                <option value="Animation">Animation</option>
+                <option value="Thriller">Thriller</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label text-warning"><i class="fa-regular fa-calendar-days me-1"></i>Release Year <span class="text-danger">*</span></label>
+              <input type="number" class="form-control border-warning border-opacity-50 text-warning fw-bold" id="addReleaseYear" min="1888" max="2030" value="2025" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Rating (0.5 to 5.0 Stars) <span class="text-danger">*</span></label>
+            <select class="form-select" id="addRating" required>
+              <option value="5.0">5.0 Stars (Masterpiece)</option>
+              <option value="4.5">4.5 Stars (Excellent)</option>
+              <option value="4.0" selected>4.0 Stars (Very Good)</option>
+              <option value="3.5">3.5 Stars (Good)</option>
+              <option value="3.0">3.0 Stars (Average)</option>
+              <option value="2.5">2.5 Stars (Fair)</option>
+              <option value="2.0">2.0 Stars (Poor)</option>
+              <option value="1.5">1.5 Stars (Bad)</option>
+              <option value="1.0">1.0 Stars (Terrible)</option>
+              <option value="0.5">0.5 Stars (Unwatchable)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" onclick="hideCustomModal('addRatingModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check me-1"></i> Save Rating</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- =================================================------------------ -->
+<!-- Edit Rating Modal -->
+<!-- =================================================------------------ -->
+<div class="modal fade" id="editRatingModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa-solid fa-pen-to-square text-warning me-2"></i>Edit Movie Rating</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="hideCustomModal('editRatingModal')" aria-label="Close"></button>
+      </div>
+      <form id="editRatingForm" onsubmit="submitEditRating(event)">
+        <input type="hidden" id="editRatingId">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">User ID <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="editUserId" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Movie Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="editMovieTitle" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">Genre <span class="text-danger">*</span></label>
+              <select class="form-select" id="editGenre" required>
+                <option value="Action">Action</option>
+                <option value="Comedy">Comedy</option>
+                <option value="Drama">Drama</option>
+                <option value="Sci-Fi">Sci-Fi</option>
+                <option value="Romance">Romance</option>
+                <option value="Horror">Horror</option>
+                <option value="Animation">Animation</option>
+                <option value="Thriller">Thriller</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label text-warning"><i class="fa-regular fa-calendar-days me-1"></i>Release Year <span class="text-danger">*</span></label>
+              <input type="number" class="form-control border-warning border-opacity-50 text-warning fw-bold" id="editReleaseYear" min="1888" max="2030" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Rating <span class="text-danger">*</span></label>
+            <select class="form-select" id="editRating" required>
+              <option value="5.0">5.0 Stars</option>
+              <option value="4.5">4.5 Stars</option>
+              <option value="4.0">4.0 Stars</option>
+              <option value="3.5">3.5 Stars</option>
+              <option value="3.0">3.0 Stars</option>
+              <option value="2.5">2.5 Stars</option>
+              <option value="2.0">2.0 Stars</option>
+              <option value="1.5">1.5 Stars</option>
+              <option value="1.0">1.0 Stars</option>
+              <option value="0.5">0.5 Stars</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" onclick="hideCustomModal('editRatingModal')">Cancel</button>
+          <button type="submit" class="btn btn-warning"><i class="fa-solid fa-floppy-disk me-1"></i> Update Rating</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- =================================================------------------ -->
+<!-- Delete Confirmation Modal -->
+<!-- =================================================------------------ -->
+<div class="modal fade" id="deleteRatingModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content text-center">
+      <div class="modal-body p-4">
+        <i class="fa-solid fa-triangle-exclamation text-danger fs-1 mb-3"></i>
+        <h5 class="mb-2">Confirm Deletion</h5>
+        <p class="text-muted small mb-3">Are you sure you want to delete this rating document from MongoDB? This operation cannot be undone.</p>
+        <p class="fw-bold text-info small" id="deleteDocDetails"></p>
+        <div class="d-flex justify-content-center gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" onclick="hideCustomModal('deleteRatingModal')">Cancel</button>
+          <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn" onclick="executeDelete()"><i class="fa-solid fa-trash me-1"></i> Delete Document</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/ratings.js') }}"></script>
+{% endblock %}
